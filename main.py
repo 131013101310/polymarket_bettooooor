@@ -10,7 +10,7 @@ price_limit = 60000 #Bet threshold
 #Get all values needed
 time_left = getTimeLeft(year=year, month=month, day=day)
 df, mu, sigma = getTickerData(ticker=ticker)
-amount_paths, paths = simulatePricePaths_GARCH(ticker=ticker, time_left=time_left, df=df, price_limit = price_limit)
+amount_paths, paths = simulatePricePaths(ticker=ticker, time_left=time_left, df=df, mu=mu, sigma=sigma, price_limit = price_limit)
 plotPaths(paths=paths)
 #Print % data
 print(f'The probability that {ticker} is worth more than {price_limit} at 00:00 of the date {day}/{month}/{year} is an estimated of: {amount_paths*100}%')

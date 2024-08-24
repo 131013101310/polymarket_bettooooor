@@ -4,7 +4,6 @@ import yfinance as yf
 import numpy as np
 import matplotlib.pyplot as plt
 import pytz
-from arch import arch_model
 
 
 def getTimeLeft(year, month, day):
@@ -39,63 +38,37 @@ def getTickerData(ticker):
 
   return df, mu, sigma
 
-
-def simulatePricePaths_GARCH(ticker, time_left, df, price_limit):
+def simulatePricePaths(ticker, time_left, df, mu, sigma, price_limit):
   """
-  Returns total paths, paths which satisfy a condition using GARCH(1,1) model
+  Returns total paths, paths which satisfy a condition
   params:
   ticker (str): Ticker you are analyzing
   time_left (int): Time left until the bet ends
   df (DataFrame): Desired ticker dataframe
+  mu (float): Mean of the desired ticker returns
+  sigma (float): Std deviation of the desired ticker returns
   price_limit (float): Price filter e.g. BTC > 60000 -> This is price_limit
   """
-  # Prepare returns data
-  returns = df['Close'].pct_change().dropna()
-
-  # Fit GARCH(1,1) model
-  model = arch_model(returns, vol='GARCH', p=1, q=1)
-  results = model.fit(disp='off')
-
-  # Extract parameters
-  omega = results.params['omega']
-  alpha = results.params['alpha[1]']
-  beta = results.params['beta[1]']
-
-  # Amount of desired iterations
+  #Amount of desired iterations
   N = 1000
-  # Time left to trade
+  #Time left to trade
   T = time_left
   paths = []
-  # Last Price
-  S0 = df['Close'].iloc[-1]
-
-  # Last volatility (you might want to use a more sophisticated method to estimate this)
-  last_vol = returns.std()
-
-  # Montecarlo loop
-  for _ in range(N):
+  #Last Price
+  S0= df['Close'].iloc[-1]
+  #Montecarlo loop
+  for i in range(N):
     path = [S0]
-    vol = last_vol
-    returns_list = returns.tolist()
-    for _ in range(T):
-      # Update volatility
-      vol = np.sqrt(omega + alpha * returns_list[-1] ** 2 + beta * vol ** 2)
-
-      # Generate return
-      r = np.random.normal(0, vol)
-
-      # Update price
-      P_t = path[-1] * (1 + r)
+    for i in range(T):
+      dt=1
+      Z= np.random.normal()
+      P_t = path[-1] * np.exp((mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * Z)
       path.append(P_t)
-
-      # Update returns for next iteration
-      returns_list.append(r)
-
     paths.append(path)
 
   paths = np.array(paths)
 
-  amount_paths = sum(paths[:, -1] > price_limit) / len(paths)
+  amount_paths =sum(paths[:,-1] > price_limit) / len(paths)
 
   return amount_paths, paths
 
